@@ -32,7 +32,14 @@ export async function validate(emailOrOptions: string | ValidatorOptions): Promi
     const mx = await getBestMx(domain)
     if (!mx) return createOutput('mx', 'MX record not found')
     if (options.validateSMTP) {
-      return checkSMTP(options.sender, email, mx.exchange)
+      const ports = [25, 465, 587, 2525]
+      let firstError
+      for (const port of ports) {
+        const result = await checkSMTP(options.sender, email, mx.exchange, port)
+        if (!firstError) firstError = result
+        if (result.valid) return result
+      }
+      return firstError as OutputFormat
     }
   }
 
